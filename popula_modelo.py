@@ -77,32 +77,33 @@ def trata_df_pdf(dfs_list):
     :return: DataFrame List
     '''
     dfs = dfs_list
+    df_delegacias = []
 
     for i in range(len(dfs)):
 
         dfs[i].columns = ['nome_preso', 'nome_mae', 'dt_nascimento', 'ocorrencia', 'dt_cadastro']
         dfs[i]['delegacia'] = nan
-        df_delegacias = dfs[i].iloc[:, 0].where(dfs[i].iloc[:, 0].str.contains('^Delegacia', na=False)).dropna()
+        df_delegacias.append(dfs[i].iloc[:,0].where(dfs[i].iloc[:, 0].str.contains('^Delegacia', na=False)).dropna())
 
-        if len(df_delegacias) > 0:
+        if len(df_delegacias[i]) > 0:
 
-            pfa = verifica_presos_folha_anterior(dfs[i], df_delegacias)  # presos da folha anterior
+            pfa = verifica_presos_folha_anterior(dfs[i], df_delegacias[i])  # presos da folha anterior
             if pfa > -1:
-                dfs[i].iloc[:pfa, 5] = dfs[i - 1].iloc[-1, 5]
+                dfs[i].iloc[:pfa, 5] = df_delegacias[i-1].iloc[-1].split(' : ')[1]
 
-            idx_del = df_delegacias.index.to_list()
+            idx_del = df_delegacias[i].index.to_list()
             lista = iter(idx_del)
             primeiro = next(lista, 'fim')
             while True:
                 next_val = next(lista, 'fim')
                 if next_val == 'fim':
-                    dfs[i].iloc[primeiro:, 5] = df_delegacias[primeiro].split(' : ')[1]
+                    dfs[i].iloc[primeiro:, 5] = df_delegacias[i][primeiro].split(' : ')[1]
                     break
                 else:
-                    dfs[i].iloc[primeiro:next_val, 5] = df_delegacias[primeiro].split(' : ')[1]
+                    dfs[i].iloc[primeiro:next_val, 5] = df_delegacias[i][primeiro].split(' : ')[1]
                     primeiro = next_val
         else:
-            dfs[i].iloc[:, 5] = dfs[i - 1].iloc[- 1, 5]
+            dfs[i].iloc[:, 5] = df_delegacias[i-1].iloc[-1].split(' : ')[1]
 
         dfs[i] = dfs[i].loc[dfs[i]['nome_preso'] != 'Nome do Preso']
         dfs[i].dropna(inplace=True)
