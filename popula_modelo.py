@@ -5,13 +5,36 @@ import tabula
 from numpy import nan
 import pandas as pd
 import argparse
+from os import path
+import sys
 
+
+# Setando as rotas do dia
+route_name = ['leste','oeste','sul']
+
+# Lendo os argumentos da linha de comando
+parser = argparse.ArgumentParser(description='Processa a lista de presos do SISPEN e preenche o arquivo world '
+                                             'com o modelo de pesquisa diária de incidência penal, mandados a cumprir'
+                                             'e antecedentes por crimes sexuais, conforme as rotas indicadas.')
+parser.add_argument("-c", "--cabecalho", help= "Caso deseje inserir dados de cabecalho: Nome do Agente, Matricula e Equipe", default=False)
+parser.add_argument("-r", "--rotas", help= "Nomes das rotas do dia separadas por ',' no formato: rota1,rota2,etc...", default='leste,oeste,sul')
+parser.add_argument("--pdf", required= True, help= "caminho relativo do arquivo pdf oriundo do SISPEN")
+parser.add_argument("--model", required= True, help= "caminho relativo do arquivo modelo em world para composição das rotas")
+args = parser.parse_args()
 
 # Setando o arquivo world com o modelo
-template = 'dados/originais/Pesquisa-Diaria-DCCP-modelo02.docx'
+template = args.model
 
 # Setando o arquivo PDF
-pdf_path = "dados/originais/solicitacao_escolta_solicitacoes.pdf"
+pdf_path = args.pdf
+
+if not (path.exists(template) and path.exists(pdf_path)):
+    print('Erro: Arquivo PDF ou MODEL inexistentes. \nInforme o caminho relativo completo dos dois arquivos.', end='\n')
+    sys.exit(1)
+
+if args.rotas:
+    # Setando as rotas do dia
+    route_name = args.rotas.split(',')
 
 # Setando as variaveis para o cabeçalho do modelo World
 agente = 'Renata'
@@ -19,15 +42,10 @@ matricula = '590010'
 delivery = '3'
 data_plantao = '{:%d/%m/%Y}'.format(date.today())
 
-# Setando as rotas do dia
-route_name = ['leste','oeste','sul']
-
-# Lendo os argumentos da linha de comando
-parser = argparse.ArgumentParser()
-parser.add_argument("-r", "--rotas", help = "Lista com o nome das rotas do dia no formato: 'rota1','rota2,'rota3','rotan'...")
-args = parser.parse_args()
-if args.rotas:
-    route_name = args.rotas.split(',')
+if args.cabecalho:
+    agente = input('Insira o nome do Agente: ')
+    matricula = input('Insira a matricula do Agente: ')
+    delivery = input('Insira o num. da equipe: ')
 
 
 # ---------------------------------
@@ -58,7 +76,7 @@ def trata_df_pdf(dfs_list):
     :param dfs_list: tabula DataFrame List
     :return: DataFrame List
     '''
-    dfs = dfs_list.copy()
+    dfs = dfs_list
 
     for i in range(len(dfs)):
 
@@ -70,7 +88,7 @@ def trata_df_pdf(dfs_list):
 
             pfa = verifica_presos_folha_anterior(dfs[i], df_delegacias)  # presos da folha anterior
             if pfa > -1:
-                dfs[i].iloc[pfa - 1, 5] = dfs[i - 1].iloc[-1, 5]
+                dfs[i].iloc[:pfa, 5] = dfs[i - 1].iloc[-1, 5]
 
             idx_del = df_delegacias.index.to_list()
             lista = iter(idx_del)
@@ -134,11 +152,20 @@ for delegacia in lst_delegacias:
     if delegacia == '1a DP':
         conteudo['p01'] = conteudo['p01'] + df_final.query('delegacia == "1a DP"')['nome_preso'].tolist()
 
-    if delegacia == '5a DP':
+    elif delegacia == '4a DP':
+        conteudo['p01'] = conteudo['p01'] + df_final.query('delegacia == "4a DP"')['nome_preso'].tolist()
+
+    elif delegacia == '5a DP':
         conteudo['p05'] = conteudo['p05'] + df_final.query('delegacia == "5a DP"')['nome_preso'].tolist()
 
     elif delegacia == '6a DP':
         conteudo['p06'] = conteudo['p06'] + df_final.query('delegacia == "6a DP"')['nome_preso'].tolist()
+
+    elif delegacia == '8a DP':
+        conteudo['p01'] = conteudo['p01'] + df_final.query('delegacia == "8a DP"')['nome_preso'].tolist()
+
+    elif delegacia == '10a DP':
+        conteudo['p01'] = conteudo['p01'] + df_final.query('delegacia == "10a DP"')['nome_preso'].tolist()
 
     elif delegacia == '11a DP':
         conteudo['p21'] = conteudo['p21'] + df_final.query('delegacia == "11a DP"')['nome_preso'].tolist()
@@ -230,4 +257,6 @@ for rota in route_name:
             document.merge_rows(str(delegacia) + '_idx', merge_content)
             # print(merge_content, end='\n\n')
 
-document.write('dados/processados/{:%d.%m.%Y}.docx'.format(date.today()))
+document.write('./{:%d.%m.%Y}.docx'.format(date.today()))
+print('\nExecucao finalizada com sucesso!', end='\n')
+print('Arquivo criado:    {:%d.%m.%Y}.docx'.format(date.today()), end='\n')
