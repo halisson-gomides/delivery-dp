@@ -18,8 +18,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from fake_useragent import UserAgent
 import time
-# ---------------------------------
 
+# ---------------------------------
 
 
 # ----------------------------------
@@ -27,16 +27,19 @@ import time
 # ----------------------------------
 
 # Setando as rotas do dia
-route_name = ['leste','oeste','sul']
+route_name = ['leste', 'oeste', 'sul']
 
 # Lendo os argumentos da linha de comando
 parser = argparse.ArgumentParser(description='Processa a lista de presos do SISPEN e preenche o arquivo world '
                                              'com o modelo de pesquisa diária de incidência penal, mandados a cumprir'
                                              'e antecedentes por crimes sexuais, conforme as rotas indicadas.')
-parser.add_argument("-c", "--cabecalho", help= "Caso deseje inserir dados de cabecalho: Nome do Agente, Matricula e Equipe", default=False)
-parser.add_argument("-r", "--rotas", help= "Nomes das rotas do dia separadas por ',' no formato: rota1,rota2,etc...", default='leste,oeste,sul')
-parser.add_argument("--pdf", required= True, help= "caminho relativo do arquivo pdf oriundo do SISPEN")
-parser.add_argument("--model", required= True, help= "caminho relativo do arquivo modelo em world para composição das rotas")
+parser.add_argument("-c", "--cabecalho",
+                    help="Caso deseje inserir dados de cabecalho: Nome do Agente, Matricula e Equipe", default=False)
+parser.add_argument("-r", "--rotas", help="Nomes das rotas do dia separadas por ',' no formato: rota1,rota2,etc...",
+                    default='leste,oeste,sul')
+parser.add_argument("--pdf", required=True, help="caminho relativo do arquivo pdf oriundo do SISPEN")
+parser.add_argument("--model", required=True,
+                    help="caminho relativo do arquivo modelo em world para composição das rotas")
 args = parser.parse_args()
 
 # Setando o arquivo world com o modelo
@@ -102,13 +105,13 @@ def trata_df_pdf(dfs_list):
 
         dfs[i].columns = ['nome_preso', 'nome_mae', 'dt_nascimento', 'ocorrencia', 'dt_cadastro']
         dfs[i]['delegacia'] = np.nan
-        df_delegacias.append(dfs[i].iloc[:,0].where(dfs[i].iloc[:, 0].str.contains('^Delegacia', na=False)).dropna())
+        df_delegacias.append(dfs[i].iloc[:, 0].where(dfs[i].iloc[:, 0].str.contains('^Delegacia', na=False)).dropna())
 
         if len(df_delegacias[i]) > 0:
 
             pfa = verifica_presos_folha_anterior(dfs[i], df_delegacias[i])  # presos da folha anterior
             if pfa > -1:
-                dfs[i].iloc[:pfa, 5] = df_delegacias[i-1].iloc[-1].split(' : ')[1].strip()
+                dfs[i].iloc[:pfa, 5] = df_delegacias[i - 1].iloc[-1].split(' : ')[1].strip()
 
             idx_del = df_delegacias[i].index.to_list()
             lista = iter(idx_del)
@@ -122,7 +125,7 @@ def trata_df_pdf(dfs_list):
                     dfs[i].iloc[primeiro:next_val, 5] = df_delegacias[i][primeiro].split(' : ')[1].strip()
                     primeiro = next_val
         else:
-            dfs[i].iloc[:, 5] = df_delegacias[i-1].iloc[-1].split(' : ')[1].strip()
+            dfs[i].iloc[:, 5] = df_delegacias[i - 1].iloc[-1].split(' : ')[1].strip()
 
         dfs[i] = dfs[i].loc[dfs[i]['nome_preso'] != 'Nome do Preso']
         dfs[i].dropna(inplace=True)
@@ -158,7 +161,7 @@ def wait_element(drv, expr, timeout=8, by_tag=By.ID, to_sleep=0):
     return True
 
 
-def scrapy_bnmp(drv, nome_preso:str, nome_mae:str) -> str:
+def scrapy_bnmp(drv, nome_preso: str, nome_mae: str) -> str:
     '''
     Função para realizar a consulta ao BNMP
     :param drv: selenium web driver
@@ -185,7 +188,8 @@ def scrapy_bnmp(drv, nome_preso:str, nome_mae:str) -> str:
     except NoSuchElementException:
         pass
 
-    linhas_proc = drv.find_elements_by_xpath('//div[@class="ui-datatable-tablewrapper ng-star-inserted"]/table/tbody/child::tr')
+    linhas_proc = drv.find_elements_by_xpath(
+        '//div[@class="ui-datatable-tablewrapper ng-star-inserted"]/table/tbody/child::tr')
     str_content = ''
     for linha in linhas_proc:
         nome = linha.find_element_by_xpath('.//td[2]/span[contains(@class, "ui-cell-data")]').text
@@ -221,12 +225,10 @@ document.merge(
     equipe=delivery,
     date_doc=data_plantao)
 
-
-
 # Criando coluna de DP's
 dp_patherns = [
     (df_final['delegacia'].isin(["1a DP", "4a DP", "8a DP", "10a DP"]), 'p01'),
-    (df_final['delegacia'] == '5a DP', 'p05'),
+    (df_final['delegacia'].isin(["2a DP", "5a DP"]), 'p05'),
     (df_final['delegacia'] == '6a DP', 'p06'),
     (df_final['delegacia'].isin(["12a DP", "17a DP"]), 'p12'),
     (df_final['delegacia'].isin(["13a DP", "35a DP"]), 'p13'),
@@ -236,12 +238,11 @@ dp_patherns = [
     (df_final['delegacia'].isin(["11a DP", "21a DP"]), 'p21'),
     (df_final['delegacia'].isin(["26a DP", "32a DP"]), 'p26'),
     (df_final['delegacia'].isin(["27a DP", "29a DP"]), 'p27'),
-    (df_final['delegacia'] == '30a DP', 'p30') 
+    (df_final['delegacia'] == '30a DP', 'p30')
 ]
 
 dp_criteria, dp_values = zip(*dp_patherns)
 df_final['dp'] = np.select(dp_criteria, dp_values, None)
-
 
 # Criando coluna de Rotas
 rotas_patherns = [
@@ -253,7 +254,6 @@ rotas_patherns = [
 rotas_criteria, rotas_values = zip(*rotas_patherns)
 df_final['rota'] = np.select(rotas_criteria, rotas_values, None)
 
-
 # ---------------------------------
 # Inciando consulta web ao BNMP
 # ---------------------------------
@@ -264,16 +264,15 @@ options.add_argument(f'user-agent={userAgent}')
 driver = webdriver.Chrome(options=options, executable_path="C:\\webdrivers\\chromedriver.exe")
 url = 'https://portalbnmp.cnj.jus.br/#/pesquisa-peca'
 driver.get(url)
-time.sleep(80)
-
+time.sleep(90)
 
 # ---------------------------------
 # Preenchendo o documento Word modelo com o conteudo dos nomes dos presos de cada DP,
 # conforme as rotas indicadas
 
-df_ = df_final[df_final['rota'].isin(route_name)] # Filtra pelas rotas
+df_ = df_final[df_final['rota'].isin(route_name)]  # Filtra pelas rotas
 
-for dp in np.unique(df_['dp'].values) :
+for dp in np.unique(df_['dp'].values):
 
     df_filtrado = df_.loc[df_['dp'] == dp].reset_index()
     merge_content = []
@@ -290,8 +289,6 @@ for dp in np.unique(df_['dp'].values) :
         merge_content.append(dict_content)
 
     document.merge_rows(str(dp) + '_idx', merge_content)
-
-
 
 driver.quit()
 document.write('./{:%d.%m.%Y}.docx'.format(date.today()))
