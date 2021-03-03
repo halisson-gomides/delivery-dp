@@ -212,6 +212,7 @@ def scrapy_bnmp(drv, nome_preso: str, nome_mae: str) -> str:
 tab_dfs = tabula.read_pdf(pdf_path, columns=[300, 500, 600, 700, 800, 900], guess=False, pages='all')
 df_tratados = trata_df_pdf(tab_dfs)
 df_final = pd.concat(df_tratados, ignore_index=True)
+df_final['delegacia'] = df_final['delegacia'].astype('category') # converte para o tipo de dados 'catergory' para aumento de desempenho
 
 # ---------------------------------
 # Tratando o World
@@ -243,6 +244,7 @@ dp_patherns = [
 
 dp_criteria, dp_values = zip(*dp_patherns)
 df_final['dp'] = np.select(dp_criteria, dp_values, None)
+df_final['dp'] = df_final['dp'].astype('category')
 
 # Criando coluna de Rotas
 rotas_patherns = [
@@ -253,6 +255,7 @@ rotas_patherns = [
 
 rotas_criteria, rotas_values = zip(*rotas_patherns)
 df_final['rota'] = np.select(rotas_criteria, rotas_values, None)
+df_final['rota'] = df_final['rota'].astype('category')
 
 # ---------------------------------
 # Inciando consulta web ao BNMP
