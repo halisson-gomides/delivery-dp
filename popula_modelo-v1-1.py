@@ -128,7 +128,8 @@ def trata_df_pdf(dfs_list):
             dfs[i].iloc[:, 5] = df_delegacias[i - 1].iloc[-1].split(' : ')[1].strip()
 
         dfs[i] = dfs[i].loc[dfs[i]['nome_preso'] != 'Nome do Preso']
-        dfs[i].dropna(inplace=True)
+        dfs[i].dropna(thresh=5, inplace=True)  # mantém as linhas que contenham pelo menos 5 valores não NaN
+        dfs[i].fillna('NC', inplace=True)
 
         # trantando as colunas
         dfs[i]['nome_preso'] = dfs[i]['nome_preso'].str.strip()
@@ -178,7 +179,7 @@ def scrapy_bnmp(drv, nome_preso: str, nome_mae: str) -> str:
     input_nomepessoa.send_keys(nome_preso)
     input_nomemae.send_keys(nome_mae)
     btn_pesquisar.click()
-    wait_element(drv, '//app-version/span[@class="cssClass"]', by_tag=By.XPATH, to_sleep=3)
+    wait_element(drv, '//app-version/span[@class="cssClass"]', by_tag=By.XPATH, to_sleep=2)
     try:
         semresultado = drv.find_element_by_xpath('//app-sem-resultado[contains(@class, "ng-star-inserted")]')
         btn_voltar = drv.find_element_by_xpath('//button[contains(@label,"Voltar")]')
@@ -209,10 +210,10 @@ def scrapy_bnmp(drv, nome_preso: str, nome_mae: str) -> str:
 # ---------------------------------
 # Tratando o PDF
 # ---------------------------------
-tab_dfs = tabula.read_pdf(pdf_path, columns=[300, 500, 600, 700, 800, 900], guess=False, pages='all')
+tab_dfs = tabula.read_pdf(pdf_path, columns=[325, 500, 600, 700, 800, 900], guess=False, pages='all')
 df_tratados = trata_df_pdf(tab_dfs)
 df_final = pd.concat(df_tratados, ignore_index=True)
-df_final['delegacia'] = df_final['delegacia'].astype('category') # converte para o tipo de dados 'catergory' para aumento de desempenho
+
 
 # ---------------------------------
 # Tratando o World
@@ -244,7 +245,7 @@ dp_patherns = [
 
 dp_criteria, dp_values = zip(*dp_patherns)
 df_final['dp'] = np.select(dp_criteria, dp_values, None)
-df_final['dp'] = df_final['dp'].astype('category')
+
 
 # Criando coluna de Rotas
 rotas_patherns = [
@@ -255,7 +256,7 @@ rotas_patherns = [
 
 rotas_criteria, rotas_values = zip(*rotas_patherns)
 df_final['rota'] = np.select(rotas_criteria, rotas_values, None)
-df_final['rota'] = df_final['rota'].astype('category')
+
 
 # ---------------------------------
 # Inciando consulta web ao BNMP
@@ -294,6 +295,6 @@ for dp in np.unique(df_['dp'].values):
     document.merge_rows(str(dp) + '_idx', merge_content)
 
 driver.quit()
-document.write('./{:%d.%m.%Y}.docx'.format(date.today()))
+document.write('./{:%d.%m.%Y}_t.docx'.format(date.today()))
 print('\nExecucao finalizada com sucesso!', end='\n')
 print('Arquivo criado:    {:%d.%m.%Y}.docx'.format(date.today()), end='\n')
