@@ -295,6 +295,6 @@ for dp in np.unique(df_['dp'].values):
     document.merge_rows(str(dp) + '_idx', merge_content)
 
 driver.quit()
-document.write('./{:%d.%m.%Y}_t.docx'.format(date.today()))
+document.write('./{:%d.%m.%Y}.docx'.format(date.today()))
 print('\nExecucao finalizada com sucesso!', end='\n')
 print('Arquivo criado:    {:%d.%m.%Y}.docx'.format(date.today()), end='\n')
