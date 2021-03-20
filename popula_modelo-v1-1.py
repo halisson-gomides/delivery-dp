@@ -265,6 +265,9 @@ options = Options()
 ua = UserAgent()
 userAgent = ua.random
 options.add_argument(f'user-agent={userAgent}')
+options.add_argument("start-maximized")
+options.add_argument("--disable-blink-features")
+options.add_argument("--disable-blink-features=AutomationControlled")
 driver = webdriver.Chrome(options=options, executable_path="C:\\webdrivers\\chromedriver.exe")
 url = 'https://portalbnmp.cnj.jus.br/#/pesquisa-peca'
 driver.get(url)
