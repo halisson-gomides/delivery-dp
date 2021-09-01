@@ -140,7 +140,7 @@ def trata_df_pdf(dfs_list):
 # ----------------------------------
 # Funções para uso do Scrapy
 # ----------------------------------
-def wait_element(drv, expr, timeout=8, by_tag=By.ID, to_sleep=0):
+def wait_element(drv, expr, timeout=15, by_tag=By.ID, to_sleep=0):
     '''
     Função para controlar o tempo de espera de carregamento da página pelo bot
     :param drv: selenium web driver
@@ -191,6 +191,7 @@ def scrapy_bnmp(drv, nome_preso: str, nome_mae: str) -> str:
 
     linhas_proc = drv.find_elements_by_xpath(
         '//div[@class="ui-datatable-tablewrapper ng-star-inserted"]/table/tbody/child::tr')
+    wait_element(drv, '//td[2]/span[contains(@class, "ui-cell-data")]', by_tag=By.XPATH)
     str_content = ''
     for linha in linhas_proc:
         nome = linha.find_element_by_xpath('.//td[2]/span[contains(@class, "ui-cell-data")]').text
@@ -268,7 +269,7 @@ options.add_argument(f'user-agent={userAgent}')
 options.add_argument("start-maximized")
 options.add_argument("--disable-blink-features")
 options.add_argument("--disable-blink-features=AutomationControlled")
-driver = webdriver.Chrome(options=options, executable_path="C:\\webdrivers\\chromedriver.exe")
+driver = webdriver.Chrome(options=options, executable_path="C:\\webdrivers\\chromedriver_92.exe")
 url = 'https://portalbnmp.cnj.jus.br/#/pesquisa-peca'
 driver.get(url)
 time.sleep(90)
